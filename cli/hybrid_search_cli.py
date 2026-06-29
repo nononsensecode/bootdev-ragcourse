@@ -41,6 +41,18 @@ def main() -> None:
     rrf_search_subparser.add_argument(
         "--limit", type=int, required=False, default=5, help="Limit. Default 5"
     )
+    rrf_search_subparser.add_argument(
+        "--enhance",
+        choices=["spell", "rewrite", "expand"],
+        required=False,
+        help="Query enhancement method",
+    )
+    rrf_search_subparser.add_argument(
+        "--rerank-method",
+        choices=["individual", "batch", "cross_encoder"],
+        required=False,
+        help="Re-Rank query",
+    )
 
     args = parser.parse_args()
 
@@ -62,9 +74,24 @@ def main() -> None:
                 )
                 print(f"  {result["document"][:100]}")
         case "rrf-search":
-            results = rrf_search(query=args.query, k=args.k, limit=args.limit)
-            for index, result in enumerate(results, start=1):
+            results = rrf_search(
+                query=args.query,
+                k=args.k,
+                limit=args.limit,
+                enhance_method=args.enhance,
+                rerank_method=args.rerank_method,
+            )
+            print(
+                f"Enhanced query ({args.enhance}): '{args.query}' -> '{results["enhanced_query"]}'\n"
+            )
+            for index, result in enumerate(results["results"], start=1):
                 print(f"{index}.  {result["title"]}")
+                if "rerank_score" in result:
+                    print(f"  Re-rank Score: {result["rerank_score"]:.3f}/10")
+                else:
+                    print(f"  Re-rank Rank: {index}")
+                if "cross_encoder_score" in result:
+                    print(f"  Cross Encoder Score: {result["cross_encoder_score"]:.3f}")
                 print(f"  RRF Score: {result["rrf_score"]:.3f}")
                 print(
                     f"  BM25 Rank: {result["bm25_rank"]:.3f}, Semantic Rank: {result["semantic_rank"]:.3f}"
