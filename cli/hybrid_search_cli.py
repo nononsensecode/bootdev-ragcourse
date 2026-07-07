@@ -1,6 +1,11 @@
 import argparse
 
-from lib.hybrid_search import normalize_scores, rrf_search, weighted_search
+from lib.hybrid_search import (
+    normalize_scores,
+    rrf_search,
+    rrf_search_evaluate,
+    weighted_search,
+)
 
 
 def main() -> None:
@@ -53,6 +58,12 @@ def main() -> None:
         required=False,
         help="Re-Rank query",
     )
+    rrf_search_subparser.add_argument(
+        "--evaluate",
+        action="store_true",
+        required=False,
+        help="Evaluate response using LLM",
+    )
 
     args = parser.parse_args()
 
@@ -74,6 +85,11 @@ def main() -> None:
                 )
                 print(f"  {result["document"][:100]}")
         case "rrf-search":
+            if args.evaluate:
+                results = rrf_search_evaluate(args.query, args.k)
+                for index, result in enumerate(results, start=1):
+                    print(f"{index}. {result["title"]}: {result['eval_score']}/3")
+                return
             results = rrf_search(
                 query=args.query,
                 k=args.k,

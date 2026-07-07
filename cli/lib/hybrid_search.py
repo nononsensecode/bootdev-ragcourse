@@ -359,7 +359,9 @@ Ranking:"""
         case "cross_encoder":
             new_limit = limit * 5
             results = search.rrf_search(query, k, new_limit)
-            print(f"Cross encoder input results: {", ".join([result["title"] for result in results])}")
+            print(
+                f"Cross encoder input results: {", ".join([result["title"] for result in results])}"
+            )
             pairs = [
                 [query, f"{doc.get('title', '')} - {doc.get('document', '')}"]
                 for doc in results
@@ -405,3 +407,35 @@ def rrf_search(
         "k": k,
         "results": reranked_results,
     }
+
+
+def rrf_search_evaluate(query: str, k: int) -> list[dict]:
+    movies = load_movies()
+    hybrid_search = HybridSearch(documents=movies)
+    results = hybrid_search.rrf_search(query=query, k=k)
+    prompt = f"""Rate how relevant each result is to this query on a 0-3 scale:
+
+Query: "{query}"
+
+Results:
+{chr(10).join([f'Title: {result["title"]} | Description: {result["document"]}' for result in results])}
+
+Scale:
+- 3: Highly relevant
+- 2: Relevant
+- 1: Marginally relevant
+- 0: Not relevant
+
+Do NOT give any numbers other than 0, 1, 2, or 3.
+
+Return ONLY the scores in the same order you were given the documents. Return a valid JSON list, nothing else. For example:
+
+[2, 0, 3, 2, 0, 1]"""
+    response = generate_response(contents=prompt)
+    scores = json.loads(response)
+    for index, result in enumerate(results):
+        result["eval_score"] = scores[index]
+
+    return results
+    
+
