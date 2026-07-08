@@ -45,3 +45,59 @@ Provide a comprehensive 3–4 sentence answer that combines information from mul
     response["titles"] = [result["title"] for result in search_results[:k]]
     response["llm_response"] = llm_response
     return response
+
+def citations_search(query: str, limit: int) -> dict:
+    movies = load_movies()
+    hybrid_search = HybridSearch(documents=movies)
+    search_results = hybrid_search.rrf_search(query=query, k=60, limit=limit)
+    prompt = (
+        prompt
+    ) = f"""Answer the query below and give information based on the provided documents.
+
+The answer should be tailored to users of Hoopla, a movie streaming service.
+If not enough information is available to provide a good answer, say so, but give the best answer possible while citing the sources available.
+
+Query: {query}
+
+Documents:
+{search_results}
+
+Instructions:
+- Provide a comprehensive answer that addresses the query
+- Cite sources in the format [1], [2], etc. when referencing information
+- If sources disagree, mention the different viewpoints
+- If the answer isn't in the provided documents, say "I don't have enough information"
+- Be direct and informative
+
+Answer:"""
+    llm_response = generate_response(contents=prompt)
+    response = {}
+    response["titles"] = [result["title"] for result in search_results]
+    response["llm_response"] = llm_response
+    return response
+
+def question_answer(question: str, limit: int) -> dict:
+    movies = load_movies()
+    hybrid_search = HybridSearch(documents=movies)
+    search_results = hybrid_search.rrf_search(query=question, k=60, limit=limit)
+    prompt = (
+        prompt
+    ) = f"""Answer the user's question based on the provided movies that are available on Hoopla, a streaming service.
+
+Question: {question}
+
+Documents:
+{search_results}
+
+Instructions:
+- Answer questions directly and concisely
+- Be casual and conversational
+- Don't be cringe or hype-y
+- Talk like a normal person would in a chat conversation
+
+Answer:"""
+    llm_response = generate_response(contents=prompt)
+    response = {}
+    response["titles"] = [result["title"] for result in search_results]
+    response["llm_response"] = llm_response
+    return response
